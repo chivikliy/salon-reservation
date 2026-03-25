@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 import random
 
 # ⚙️ 管理者画面 UI レイアウト設定
-VERSION = "v5.0.0 (Admin ダッシュボード シンプル統合版)"
+VERSION = "v5.1.0 (Admin エラー完全対策版)"
 
 BASE_BG = "#fdfaf6"
 BASE_TEXT = "#333333"
@@ -77,7 +77,8 @@ search_query = st.sidebar.text_input("お名前（漢字・カナ）で検索")
 
 target_reservations = []
 for req in st.session_state.admin_db:
-    req_date = req["date"]
+    # 【安全装置1】古いデータで日付がなくてもエラーにならないよう保護
+    req_date = req.get("date", datetime.today().date())
     
     is_in_period = False
     if period_option == "全日程": is_in_period = True
@@ -91,9 +92,11 @@ for req in st.session_state.admin_db:
     if is_in_period: target_reservations.append(req)
 
 if search_query:
-    target_reservations = [req for req in target_reservations if search_query in req["name"] or search_query in req["furigana"]]
+    # 【安全装置2】古いデータでフリガナがなくても検索でクラッシュさせない
+    target_reservations = [req for req in target_reservations if search_query in req.get("name", "") or search_query in req.get("furigana", "")]
 
-target_reservations.sort(key=lambda x: (x["date"], x["time"]))
+# 【安全装置3】並べ替え時のエラーを防止
+target_reservations.sort(key=lambda x: (x.get("date", datetime.today().date()), x.get("time", "00:00")))
 
 MAX_DISPLAY_CARDS = 100
 display_reservations = target_reservations[:MAX_DISPLAY_CARDS]
@@ -118,23 +121,41 @@ for i, tab_name in enumerate(CATEGORY_TABS):
         if tab_name == "すべて":
             filtered_res = display_reservations
         else:
-            filtered_res = [req for req in display_reservations if req["service"] == tab_name]
+            # 【安全装置4】サービス名が存在しなくてもクラッシュさせない
+            filtered_res = [req for req in display_reservations if req.get("service") == tab_name]
         
         if not filtered_res:
             st.write(f"ℹ️ このカテゴリ（{tab_name}）には予約が入っておりません。")
         else:
             for req in filtered_res:
+                # 【安全装置5】各データを安全に取得し、フリガナがない古いデータでも綺麗に表示
+                r_date = req.get('date', '')
+                r_time = req.get('time', '')
+                r_service = req.get('service', '不明')
+                r_name = req.get('name', '不明')
+                r_furi = req.get('furigana', '')
+                r_staff = req.get('staff', '未定')
+                r_status = req.get('status', '不明')
+                
+                furi_display = f"（{r_furi}）" if r_furi else ""
+
                 st.markdown(f"""
                 <div style="border:1px solid #eaddd0; border-radius: 8px; padding: 15px; margin-bottom: 12px; background-color: #ffffff; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
                     <h4 style="margin:0; color:#333333; display:flex; align-items:center; flex-wrap:wrap;">
-                        📅 {req['date']} 
-                        <span style="font-weight:bold; color:#d9b38c; margin: 0 10px;">【{req['service']}】</span> 
-                        ⏰ {req['time']} - {req['name']}（{req['furigana']}）様
+                        📅 {r_date} 
+                        <span style="font-weight:bold; color:#d9b38c; margin: 0 10px;">【{r_service}】</span> 
+                        ⏰ {r_time} - {r_name}{furi_display}様
                     </h4>
                     <hr style="margin: 10px 0; border: none; border-top: 1px dashed #eaddd0;">
                     <p style="margin:0; color:#555555; font-size: 15px; line-height: 1.5;">
-                        <b>指名担当者:</b> {req['staff']} &nbsp;&nbsp;|&nbsp;&nbsp;
-                        <b>状況:</b> <span style="color:#2e8b57; font-weight:bold;">{req['status']}</span>
+                        <b>指名担当者:</b> {r_staff} &nbsp;&nbsp;|&nbsp;&nbsp;
+                        <b>状況:</b> <span style="color:#2e8b57; font-weight:bold;">{r_status}</span>
                     </p>
                 </div>
                 """, unsafe_allow_html=True)
+
+# --- 4. データベースリセット機能（完全初期化） ---
+st.sidebar.markdown("---")
+if st.sidebar.button("⚙️ 古いデータを削除してリセット"):
+    st.session_state.admin_db = []
+    st.sidebar.success("システム内の古いデータを完全に消去しました。ブラウザの更新ボタン（F5キー）を押してください。")
