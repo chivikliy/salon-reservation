@@ -1,9 +1,10 @@
 import streamlit as st
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 import random
 
 # ⚙️ 管理者画面 UI レイアウト設定
-VERSION = "v5.1.0 (Admin エラー完全対策版)"
+# v5.2.0：文字データ混入によるクラッシュを防ぐ「鉄壁の日付変換システム」を導入
+VERSION = "v5.2.0 (Admin 鉄壁の日付処理・完全対策版)"
 
 BASE_BG = "#fdfaf6"
 BASE_TEXT = "#333333"
@@ -36,10 +37,10 @@ if 'admin_db' not in st.session_state:
     staff_list = ["関根 光代", "田中 健太", "佐藤 美咲", "鈴木 翔太", "山田 花子", "高橋 陽子"]
     services = ["ヘア", "スパ", "着付け", "ネイル", "歯医者"]
     times = ["10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00", "18:00"]
-    today = datetime.today().date()
+    today_date = datetime.today().date()
     
     for day_offset in range(20):
-        target_date = today + timedelta(days=day_offset)
+        target_date = today_date + timedelta(days=day_offset)
         used_time_staff, used_names = set(), set()
         daily_count, attempts = 0, 0
         while daily_count < 10 and attempts < 100:
@@ -57,6 +58,25 @@ if 'admin_db' not in st.session_state:
                     "staff": r_staff, "service": r_service, "status": "予約確定"
                 })
                 daily_count += 1
+
+# 🛡️ 【絶対防御】どんなデータでも必ずカレンダーの「日付型」に変換する関数
+def get_safe_date(date_value):
+    # すでに正しい日付型の場合
+    if isinstance(date_value, date) and not isinstance(date_value, datetime):
+        return date_value
+    # 時間が含まれるDatetime型の場合、日付のみを取り出す
+    if isinstance(date_value, datetime):
+        return date_value.date()
+    # 文字列（String型）として混入している場合、強制的に日付型に翻訳する
+    if isinstance(date_value, str):
+        try:
+            # "2026-03-25" のような最初の10文字を日付として読み取る
+            return datetime.strptime(date_value[:10], "%Y-%m-%d").date()
+        except ValueError:
+            pass
+    # 判別不能なデータや空っぽの場合は、システムを止めず「今日」を返す
+    return datetime.today().date()
+
 
 # --- 1. 高度なフィルター機能（サイドバー） ---
 st.sidebar.markdown("### 🔍 予約フィルター")
@@ -77,8 +97,8 @@ search_query = st.sidebar.text_input("お名前（漢字・カナ）で検索")
 
 target_reservations = []
 for req in st.session_state.admin_db:
-    # 【安全装置1】古いデータで日付がなくてもエラーにならないよう保護
-    req_date = req.get("date", datetime.today().date())
+    # ⚠️ ここで絶対防御システムを起動。req.get("date") が文字であっても強制的に日付型に直す
+    req_date = get_safe_date(req.get("date"))
     
     is_in_period = False
     if period_option == "全日程": is_in_period = True
@@ -92,11 +112,10 @@ for req in st.session_state.admin_db:
     if is_in_period: target_reservations.append(req)
 
 if search_query:
-    # 【安全装置2】古いデータでフリガナがなくても検索でクラッシュさせない
     target_reservations = [req for req in target_reservations if search_query in req.get("name", "") or search_query in req.get("furigana", "")]
 
-# 【安全装置3】並べ替え時のエラーを防止
-target_reservations.sort(key=lambda x: (x.get("date", datetime.today().date()), x.get("time", "00:00")))
+# 並べ替え時にも絶対防御システムを通して安全に処理する
+target_reservations.sort(key=lambda x: (get_safe_date(x.get("date")), x.get("time", "00:00")))
 
 MAX_DISPLAY_CARDS = 100
 display_reservations = target_reservations[:MAX_DISPLAY_CARDS]
@@ -121,15 +140,15 @@ for i, tab_name in enumerate(CATEGORY_TABS):
         if tab_name == "すべて":
             filtered_res = display_reservations
         else:
-            # 【安全装置4】サービス名が存在しなくてもクラッシュさせない
             filtered_res = [req for req in display_reservations if req.get("service") == tab_name]
         
         if not filtered_res:
             st.write(f"ℹ️ このカテゴリ（{tab_name}）には予約が入っておりません。")
         else:
             for req in filtered_res:
-                # 【安全装置5】各データを安全に取得し、フリガナがない古いデータでも綺麗に表示
-                r_date = req.get('date', '')
+                # 画面表示用のデータを安全に取得
+                r_date_raw = req.get('date', '')
+                r_date_str = str(r_date_raw)[:10] if r_date_raw else "不明"
                 r_time = req.get('time', '')
                 r_service = req.get('service', '不明')
                 r_name = req.get('name', '不明')
@@ -142,7 +161,7 @@ for i, tab_name in enumerate(CATEGORY_TABS):
                 st.markdown(f"""
                 <div style="border:1px solid #eaddd0; border-radius: 8px; padding: 15px; margin-bottom: 12px; background-color: #ffffff; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
                     <h4 style="margin:0; color:#333333; display:flex; align-items:center; flex-wrap:wrap;">
-                        📅 {r_date} 
+                        📅 {r_date_str} 
                         <span style="font-weight:bold; color:#d9b38c; margin: 0 10px;">【{r_service}】</span> 
                         ⏰ {r_time} - {r_name}{furi_display}様
                     </h4>
