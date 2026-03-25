@@ -4,54 +4,46 @@ import re
 import random
 
 # ⚙️ UI レイアウト設定
-# v4.0.0：シック＆モダンデザイン刷新、カテゴリ別動的配色、全日程エラー修正（Admin同期）
-VERSION = "v4.0.0 (LabPeace シック＆モダン統合版)"
+# v5.0.0：カテゴリのシンプル化、洗練された明るいデザイン、履歴エリアのコンパクト化
+VERSION = "v5.0.0 (シンプル＆ナチュラル統合版)"
 
-# シックでモダンなベーステーマカラー（ネイビーグレー ＆ クリームゴールド）
-BASE_BG = "#2c3e50" # シックダーク背景
-BASE_TEXT = "#ecf0f1" # ライトテキスト
+# サロン向けの清潔感のあるベーステーマカラー
+BASE_BG = "#fdfaf6" # ナチュラルベージュ
+BASE_TEXT = "#333333" # ダークグレー
 ACCENT_GOLD = "#d9b38c" # アクセントゴールド
 
-# カテゴリ別動的配色設定（通知エリア accent / タブ内背景 tab_bg）
+# 目に優しいくすみカラーのカテゴリ配色
 CATEGORY_COLORS = {
-    "✂️ ヘア (LAB Peace 予防医学)": {"accent": "#4f6c56", "tab_bg": "#f0f4f1"}, # モスグリーン
-    "💆‍♀️ スパ (ドクターラブシステム)": {"accent": "#6a5acd", "tab_bg": "#f3f0f7"}, # ラベンダー
-    "🛒 商品販売 (Precious EC)": {"accent": "#a0522d", "tab_bg": "#f7f0ed"}, # テラコッタ
-    "👘 着付け": {"accent": "#4682b4", "tab_bg": "#f0f6fa"}, # アイリスブルー
-    "💅 ネイル": {"accent": "#bc8f8f", "tab_bg": "#f7f0f0"}, # ローズマダー
-    "🧘 瞑想教室": {"accent": "#98fb98", "tab_bg": "#f0f7f0"}, # ティーグリーン
-    "🦷 歯医者": {"accent": "#5f9ea0", "tab_bg": "#f0f7f7"} # セルリアンブルー
+    "ヘア": {"accent": "#8DA399", "tab_bg": "#ffffff"}, # くすみグリーン
+    "スパ": {"accent": "#A393B3", "tab_bg": "#ffffff"}, # くすみパープル
+    "着付け": {"accent": "#93A8B3", "tab_bg": "#ffffff"}, # くすみブルー
+    "ネイル": {"accent": "#B3939A", "tab_bg": "#ffffff"}, # くすみピンク
+    "歯医者": {"accent": "#93B3B3", "tab_bg": "#ffffff"}  # くすみシアン
 }
 
-st.set_page_config(page_title=f"Dr's Salon LAB 予約・商品購入システム {VERSION}", layout="wide")
+st.set_page_config(page_title=f"Dr's Salon LAB 予約システム {VERSION}", layout="wide")
 
-# シック＆モダンデザイン適用（CSS）
+# 洗練された明るいデザイン適用（CSS）
 st.markdown(f"""
     <style>
     .stApp {{ background-color: {BASE_BG}; color: {BASE_TEXT}; }}
     /* ボタンデザイン */
     div.stButton > button:first-child {{
-        background-color: {ACCENT_GOLD}; color: {BASE_BG};
+        background-color: {ACCENT_GOLD}; color: white;
         border-radius: 8px; border: none; width: 100%; font-weight: bold; padding: 12px;
         transition: background-color 0.3s;
     }}
-    div.stButton > button:first-child:hover {{ background-color: #e5c3a1; }}
+    div.stButton > button:first-child:hover {{ background-color: #c79a72; }}
     /* タブデザイン */
-    .stTabs [data-baseweb="tab-list"] button {{ color: {BASE_TEXT}; font-weight: bold; padding: 10px; }}
-    .stTabs [data-baseweb="tab-list"] button[aria-selected="true"] {{ color: {ACCENT_GOLD}; border-bottom-color: {ACCENT_GOLD}; }}
-    /* エキスパンダーデザイン */
-    .stExpander {{ background-color: rgba(0,0,0,0.1); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; }}
-    /* テキストコードデザイン */
-    code {{ white-space: pre-wrap !important; word-break: break-all; color: {ACCENT_GOLD}; background-color: rgba(0,0,0,0.2); }}
-    /* フォーム入力フィールドのデザイン（ネイビーグレー背景に合わせる） */
-    .stTextInput input, .stSelectbox select, .stDateInput input, .stTimeInput input {{ color: {BASE_TEXT}; background-color: rgba(0,0,0,0.3); border-color: rgba(255,255,255,0.1); }}
-    /* ラジオボタン */
-    div[data-baseweb="radio"] label {{ color: {BASE_TEXT}; }}
+    .stTabs [data-baseweb="tab-list"] button {{ color: #777777; font-weight: bold; padding: 10px; font-size: 1.1em; }}
+    .stTabs [data-baseweb="tab-list"] button[aria-selected="true"] {{ color: {BASE_TEXT}; border-bottom-color: {ACCENT_GOLD}; }}
+    /* 入力フィールドのデザイン */
+    .stTextInput input, .stSelectbox select, .stDateInput input, .stTimeInput input {{ background-color: #ffffff; border: 1px solid #dddddd; color: {BASE_TEXT}; }}
     </style>
 """, unsafe_allow_html=True)
 
 st.title(f"Dr's Salon LAB 古河店 ({VERSION})")
-st.subheader("総合オンライン予約 ＆ Precious EC 商品購入システム")
+st.subheader("総合オンライン予約システム")
 
 if 'history_list' not in st.session_state:
     st.session_state.history_list = []
@@ -85,65 +77,37 @@ with col3:
 
 history = st.radio("ご来店歴", ["初めて（新規）", "2回目以降（再来）"], horizontal=True)
 
-# LabPeace & Precious EC 統合サービス一覧
+# シンプル化されたサービス一覧
 SERVICES = {
-    "✂️ ヘア (LAB Peace 予防医学)": {
-        "menus": {
-            "【予防医学】Dr's LAB 根本改善カット": 6600, 
-            "【T-Crystal】髪質改善カラー＋根本改善カット": 11000, 
-            "【リバースエイジング】頭皮洗浄＋根本改善カット": 8800
-        }, 
+    "ヘア": {
+        "menus": {"【予防医学】Dr's LAB 根本改善カット": 6600, "【T-Crystal】髪質改善カラー＋根本改善カット": 11000, "【リバースエイジング】頭皮洗浄＋根本改善カット": 8800}, 
         "staffs": ["指名なし", "関根 光代", "田中 健太", "佐藤 美咲"]
     },
-    "💆‍♀️ スパ (ドクターラブシステム)": {
-        "menus": {
-            "【フムスエキス配合】極上エナジースカルプスパ(60分)": 8000, 
-            "【毛髪科学に基づく】リバースエイジングスパ(45分)": 6000
-        }, 
+    "スパ": {
+        "menus": {"【フムスエキス配合】極上エナジースカルプスパ(60分)": 8000, "【毛髪科学に基づく】リバースエイジングスパ(45分)": 6000}, 
         "staffs": ["指名なし", "鈴木 翔太", "山田 花子"]
     },
-    "🛒 商品販売 (Precious EC)": {
-        "menus": {
-            "【新】01：シャンティン＋シャンプー(360mL)": 7920,
-            "【新】02：ヴェーダ＋シャンプー(360mL)": 7480,
-            "03：エナジースカルプトリートメント(550mL)": 6600,
-            "06：オペラ ボタニカルヘアオイル(80mL)": 4290,
-            "07：テネット 乳液トリートメント(100g)": 3300,
-            "08：ロータス(150mL)": 3960,
-            "ハードWAX": 2420,
-            "01：ブラックシリカボール(1個)": 1980
-        },
-        "staffs": ["担当者不要（店舗受け取り）"]
-    },
-    "👘 着付け": {"menus": {"訪問着・留袖 着付け": 8800, "振袖 着付け": 12000}, "staffs": ["指名なし", "山田 花子", "高橋 陽子"]},
-    "💅 ネイル": {"menus": {"ジェルネイル（ワンカラー）": 5000, "フットネイル": 6500}, "staffs": ["指名なし", "高橋 陽子"]},
-    "🧘 瞑想教室": {"menus": {"初心者向けマインドフルネス": 3000}, "staffs": ["伊藤 翼"]},
-    "🦷 歯医者": {"menus": {"検診・クリーニング": 0, "虫歯治療": 0}, "staffs": ["希望なし", "関根 光代"]}
+    "着付け": {"menus": {"訪問着・留袖 着付け": 8800, "振袖 着付け": 12000}, "staffs": ["指名なし", "山田 花子", "高橋 陽子"]},
+    "ネイル": {"menus": {"ジェルネイル（ワンカラー）": 5000, "フットネイル": 6500}, "staffs": ["指名なし", "高橋 陽子"]},
+    "歯医者": {"menus": {"検診・クリーニング": 0, "虫歯治療": 0}, "staffs": ["希望なし", "関根 光代"]}
 }
 
 st.markdown("---")
-st.markdown("### 2. ご希望のサービスまたは商品を選択し、予約を確定してください")
+st.markdown("### 2. ご希望のサービスを選択し、予約を確定してください")
 tab_list = st.tabs(list(SERVICES.keys()))
 
 ALL_TIME_SLOTS = ["10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00", "18:00"]
 
 for i, (service_name, service_data) in enumerate(SERVICES.items()):
-    # システムがカテゴリごとの配色を取得いたします
-    colors = CATEGORY_COLORS.get(service_name, {"accent": ACCENT_GOLD, "tab_bg": BASE_BG})
+    colors = CATEGORY_COLORS.get(service_name, {"accent": ACCENT_GOLD, "tab_bg": "#ffffff"})
     
     with tab_list[i]:
-        # 【解決策1 & 2】タブ内の背景色をカテゴリ色に変更し、通知エリアをカスタムHTMLで色分けいたしました
         st.markdown(f"""
             <style>
-            /* このタブ内のCSS */
-            [data-testid="stForm"] {{ background-color: {colors['tab_bg']} !important; border-radius: 10px; padding: 25px; color: #333; }}
-            /* フォーム内のラベル・テキスト色を調整 (タブ背景色に合わせる) */
-            [data-testid="stForm"] .stText, [data-testid="stForm"] .stMarkdown p, [data-testid="stForm"] label, [data-testid="stForm"] div[data-baseweb="radio"] label {{ color: #333 !important; font-weight: bold; }}
-            [data-testid="stForm"] input, [data-testid="stForm"] select, [data-testid="stForm"] .stDateInput div, [data-testid="stForm"] .stTimeInput div {{ color: #333 !important; border-color: {colors['accent']}; background-color: rgba(255,255,255,0.5); }}
+            [data-testid="stForm"] {{ background-color: {colors['tab_bg']} !important; border-radius: 10px; padding: 25px; border: 1px solid #eeeeee; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }}
             </style>
-            
-            <div style="background-color: {colors['accent']}; color: white; padding: 12px; border-radius: 8px; margin-bottom: 25px; font-weight: bold; font-size: 1.1em; text-align: center;">
-                🟢 現在 **【 {service_name} 】** の予約画面を開いています
+            <div style="background-color: {colors['accent']}; color: white; padding: 10px; border-radius: 6px; margin-bottom: 20px; font-weight: bold; text-align: center; letter-spacing: 2px;">
+                【 {service_name} 】の予約画面
             </div>
         """, unsafe_allow_html=True)
         
@@ -151,11 +115,10 @@ for i, (service_name, service_data) in enumerate(SERVICES.items()):
             sel_menu = st.selectbox(f"{service_name} のメニューを選択", list(service_data["menus"].keys()))
             sel_staff = st.selectbox("ご希望の担当者", service_data["staffs"])
             
-            d = st.date_input("ご希望の予約日（受取日）", key=f"date_{i}")
+            d = st.date_input("ご希望の予約日", key=f"date_{i}")
             
-            # 空き時間計算
             booked_times = []
-            if sel_staff not in ["指名なし", "希望なし", "担当者不要（店舗受け取り）"]:
+            if sel_staff not in ["指名なし", "希望なし"]:
                 for record in st.session_state.history_list:
                     if str(d) in record and sel_staff in record and "テスト自動生成" not in record:
                         for slot in ALL_TIME_SLOTS:
@@ -164,13 +127,13 @@ for i, (service_name, service_data) in enumerate(SERVICES.items()):
             available_times = [slot for slot in ALL_TIME_SLOTS if slot not in booked_times]
             
             if not available_times:
-                st.write(f"⚠️ **申し訳ございません。{d} は担当者の予約が埋まっております。**")
+                st.error(f"申し訳ございません。{d} は担当者の予約が埋まっております。")
                 t = None
             else:
                 t = st.selectbox("空いている時間を選択してください", available_times, key=f"time_{i}")
             
             dentist_info = ""
-            if service_name == "🦷 歯医者":
+            if service_name == "歯医者":
                 st.markdown("#### 📝 事前WEB問診票（必須）")
                 q_symptom = st.text_area("1. 具体的な症状をご記入ください（いつから、どのように痛むか等）")
                 dentist_info = f"\n症状: {q_symptom}"
@@ -183,35 +146,37 @@ for i, (service_name, service_data) in enumerate(SERVICES.items()):
                 current_booking_signature = f"{name}_{sel_menu}_{d}_{t}"
                 
                 if not name or not furigana or len(phone) < 10:
-                    st.write("🔴 **エラー: お名前（フルネーム）、フリガナ、正しい電話番号を入力してください。**")
+                    st.error("エラー: お名前（フルネーム）、フリガナ、正しい電話番号を入力してください。")
                 elif not confirm_check:
-                    st.write("⚠️ **システムからの案内: 「確認しました」のチェックボックスをマウスでクリックしてください。**")
-                elif service_name == "🦷 歯医者" and not q_symptom:
-                    st.write("⚠️ **システムからの案内: 歯科予約の場合は、問診票の「症状」を必ず入力してください。**")
+                    st.warning("案内: 「確認しました」のチェックボックスをクリックしてください。")
+                elif service_name == "歯医者" and not q_symptom:
+                    st.warning("案内: 歯科予約の場合は、問診票の「症状」を必ず入力してください。")
                 elif current_booking_signature == st.session_state.last_booking_signature:
-                    st.write("ℹ️ **案内: 既に同じ内容での予約が完了しています（二重送信防止）。**")
+                    st.warning("案内: 既に同じ内容での予約が完了しています（二重送信防止）。")
                 else:
                     st.session_state.last_booking_signature = current_booking_signature
                     price = service_data["menus"][sel_menu]
                     price_str = f"{price}円" if price > 0 else "窓口でご相談"
                     
                     st.balloons()
-                    st.write("### 🎉 予約が正常にシステムへ確定されました！")
+                    st.success("🎉 予約が正常に確定されました！")
                     
                     final_data = f"【予約完了】\nお名前: {name}（{furigana}）様\n電話: {phone}\n来店歴: {history}\n\nカテゴリ: {service_name}\nメニュー: {sel_menu}\n担当: {sel_staff}\n日時: {d} {t}\n目安金額: {price_str}{dentist_info}"
                     st.code(final_data)
                     
-                    # 管理者カードの視覚化に合わせた形式で記録
                     new_history_line = f"📅 {d} ⏰ {t} | {name}（{furigana}）様 | 担当: {sel_staff} | {service_name}: {sel_menu} | {price_str}"
                     st.session_state.history_list.append(new_history_line)
 
-# --- 3. 簡易履歴表示 ---
+# --- 3. 簡易履歴表示（コンパクト化） ---
 if st.session_state.history_list:
     st.divider()
-    st.write("#### 【システムが本日受付した予約一覧】（※テストデータは非表示）")
-    for item in st.session_state.history_list:
-        if "テスト自動生成" not in item:
-            st.code(item)
+    st.write("#### 【本日受付した予約一覧】")
+    # システムは高さを200pxに固定したスクロール可能なコンテナを作成いたします
+    with st.container(height=200):
+        for item in st.session_state.history_list:
+            if "テスト自動生成" not in item:
+                # 視認性の高いシンプルなリスト形式で表示いたします
+                st.markdown(f"<div style='font-size: 0.95em; padding: 6px 0; border-bottom: 1px solid #eeeeee;'>{item}</div>", unsafe_allow_html=True)
 
 st.markdown("---")
 with st.expander("🛠 開発者専用メニュー（動作テスト用のダミーデータ自動生成）"):
@@ -221,7 +186,7 @@ with st.expander("🛠 開発者専用メニュー（動作テスト用のダミ
             ("田中 花子", "タナカ ハナコ"), ("伊藤 翼", "イトウ ツバサ"), ("渡辺 陽子", "ワタナベ ヨウコ"), 
             ("山本 大地", "ヤマモト ダイチ"), ("中村 さくら", "ナカムラ サクラ")
         ]
-        dummy_staff_list = ["関根 光代", "田中 健太", "佐藤 美咲", "鈴木 翔太", "山田 花子", "高橋 陽子", "伊藤 翼"]
+        dummy_staff_list = ["関根 光代", "田中 健太", "佐藤 美咲", "鈴木 翔太", "山田 花子", "高橋 陽子"]
         dummy_services = list(SERVICES.keys())
         today = datetime.today().date()
         added_count = 0
@@ -242,11 +207,9 @@ with st.expander("🛠 開発者専用メニュー（動作テスト用のダミ
                 if (r_time, r_staff) not in used_time_staff and r_name not in used_names:
                     used_time_staff.add((r_time, r_staff))
                     used_names.add(r_name)
-                    
-                    # 記録形式も最新に同期いたします
                     dummy_record = f"📅 {target_date} ⏰ {r_time} | {r_name}（{r_furi}）様 | 担当: {r_staff} | {r_service} | テスト自動生成"
                     st.session_state.history_list.append(dummy_record)
                     daily_count += 1
                     added_count += 1
                     
-        st.success(f"システムが30日分、合計{added_count}件の重複しないダミー予約を生成し、リストに追加いたしました。")
+        st.success(f"システムが30日分、合計{added_count}件のダミー予約を生成し、リストに追加いたしました。")
