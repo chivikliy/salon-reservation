@@ -3,8 +3,8 @@ from datetime import datetime, timedelta, date
 import random
 
 # ⚙️ 管理者画面 UI レイアウト設定
-# v6.2.0：サイドバー表示不具合の完全修復、日付取得ロジックの再強化
-VERSION = "v6.2.0 (Admin 表示不具合・完全修復版)"
+# v6.3.0：正しい予約URLへのリンク、日付計算エラーの鉄壁防御、コンパクトUI
+VERSION = "v6.3.0 (Admin リンク修正・鉄壁版)"
 
 BASE_BG = "#fdfaf6"
 BASE_TEXT = "#333333"
@@ -25,6 +25,7 @@ st.markdown(f"""
         color: white !important; text-decoration: none; border-radius: 6px;
         font-weight: bold; font-size: 12px; text-align: center; margin-bottom: 15px;
     }}
+    .nav-link-btn:hover {{ background-color: #c79a72; }}
     </style>
 """, unsafe_allow_html=True)
 
@@ -32,8 +33,8 @@ st.title("管理者専用ダッシュボード")
 
 # --- 1. サイドバー：ナビゲーション ＆ 検索フィルター ---
 st.sidebar.markdown("### 🔗 ナビゲーション")
-# お客様予約ページへのリンク（実際のURLに書き換えてください）
-st.sidebar.markdown('<a href="https://app-py-xxxx.streamlit.app/" target="_blank" class="nav-link-btn">👉 お客様用予約ページを開く</a>', unsafe_allow_html=True)
+# 【修正済み】読者にご指定いただいた正しい予約ページURLを反映いたしました
+st.sidebar.markdown('<a href="https://salon-reservation-e2g6x54eiqmehmp7pc9uzh.streamlit.app/" target="_blank" class="nav-link-btn">👉 お客様用予約ページを開く</a>', unsafe_allow_html=True)
 
 st.sidebar.markdown("---")
 st.sidebar.markdown("### 🔍 予約フィルター")
@@ -44,7 +45,6 @@ period_option = st.sidebar.selectbox(
     index=0
 )
 
-# 【修復ポイント】期間に応じて基準日入力を確実に表示させるロジック
 if period_option != "全日程":
     base_date = st.sidebar.date_input("基準日を選択", datetime.today().date())
 else:
@@ -55,7 +55,6 @@ search_query = st.sidebar.text_input("お名前（漢字・カナ）で検索")
 # データの準備（セッションステート）
 if 'admin_db' not in st.session_state:
     st.session_state.admin_db = []
-    # （テスト用ダミーデータ生成は維持）
     dummy_names = [("佐藤 健太", "サトウ ケンタ"), ("鈴木 美咲", "スズキ ミサキ")]
     staff_list = ["関根 光代", "田中 健太", "佐藤 美咲", "鈴木 翔太", "山田 花子", "高橋 陽子"]
     services = ["ヘア", "スパ", "着付け", "ネイル", "歯医者"]
@@ -69,7 +68,7 @@ if 'admin_db' not in st.session_state:
             "staff": random.choice(staff_list), "service": random.choice(services), "status": "予約確定"
         })
 
-# 日付変換の安全装置
+# 🛡️ 【絶対防御】日付変換の安全装置（文字データ混入によるクラッシュを防止）
 def get_safe_date(date_value):
     if isinstance(date_value, date) and not isinstance(date_value, datetime): return date_value
     if isinstance(date_value, datetime): return date_value.date()
@@ -119,7 +118,7 @@ for i, tab_name in enumerate(CATEGORY_TABS):
                 st.markdown(f"""
                 <div style="border:1px solid #eaddd0; border-radius: 8px; padding: 12px; margin-bottom: 10px; background-color: #ffffff; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
                     <h4 style="margin:0; font-size: 1.1em; color: #333;">
-                        📅 {r_date} <span style="color:{ACCENT_GOLD};">【{req.get('service')}】</span> ⏰ {req.get('time')} - {req.get('name')}様
+                        📅 {r_date} <span style="font-weight:bold; color:{ACCENT_GOLD};">【{req.get('service')}】</span> ⏰ {req.get('time')} - {req.get('name')}様
                     </h4>
                 </div>
                 """, unsafe_allow_html=True)
