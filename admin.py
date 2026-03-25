@@ -3,33 +3,41 @@ from datetime import datetime, timedelta
 import random
 
 # ⚙️ 管理者画面 UI レイアウト設定
-VERSION = "v2.0.0 (Admin Dashboard)" # 高度な管理機能と自動タブ振り分けを追加
+VERSION = "v3.0.0 (LabPeace & Precious EC 統合管理ダッシュボード)"
 st.set_page_config(page_title=f"サロン管理者ダッシュボード {VERSION}", layout="wide")
 
 st.title("管理者専用ダッシュボード")
-st.markdown("### 📅 日別予約カレンダー確認システム")
+st.markdown("### 📅 日別・期間別 予約管理システム")
 
-# データベース接続前のテスト用ダミーデータ生成システム
+# データベース接続前のテスト用ダミーデータ生成システム（最新仕様に同期）
 if 'admin_db' not in st.session_state:
     st.session_state.admin_db = []
-    # システムが今日から3日間のダミーデータを20件作成いたします
-    dummy_names = ["佐藤", "鈴木", "高橋", "田中", "伊藤", "渡辺", "小林"]
-    staff_list = ["田中", "佐藤", "鈴木", "専属着付師 山田", "高橋", "インストラクター 伊藤", "院長希望"]
-    services = ["✂️ ヘア", "💆‍♀️ スパ", "👘 着付け", "💅 ネイル", "🧘 瞑想教室", "🦷 歯医者"]
+    
+    dummy_data = [
+        ("佐藤 健太", "サトウ ケンタ"), ("鈴木 美咲", "スズキ ミサキ"), ("高橋 翔太", "タカハシ ショウタ"), 
+        ("田中 花子", "タナカ ハナコ"), ("伊藤 翼", "イトウ ツバサ"), ("渡辺 陽子", "ワタナベ ヨウコ"), 
+        ("山本 大地", "ヤマモト ダイチ"), ("中村 さくら", "ナカムラ サクラ")
+    ]
+    staff_list = ["関根 光代", "田中 健太", "佐藤 美咲", "鈴木 翔太", "山田 花子", "高橋 陽子", "伊藤 翼"]
+    services = [
+        "✂️ ヘア (LAB Peace 予防医学)", "💆‍♀️ スパ (ドクターラブシステム)", "🛒 商品販売 (Precious EC)", 
+        "👘 着付け", "💅 ネイル", "🧘 瞑想教室", "🦷 歯医者"
+    ]
     times = ["10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00", "18:00"]
     today = datetime.today().date()
     
-    for i in range(20):
-        r_date = today + timedelta(days=random.randint(0, 2))
+    for i in range(50): # 管理画面での表示テスト用に50件生成
+        r_date = today + timedelta(days=random.randint(0, 10))
         r_time = random.choice(times)
-        r_name = random.choice(dummy_names)
+        r_person = random.choice(dummy_data)
         r_staff = random.choice(staff_list)
         r_service = random.choice(services)
         
         st.session_state.admin_db.append({
             "date": r_date,
             "time": r_time,
-            "name": r_name,
+            "name": r_person[0],
+            "furigana": r_person[1],
             "staff": r_staff,
             "service": r_service,
             "status": "予約確定"
@@ -38,28 +46,22 @@ if 'admin_db' not in st.session_state:
 # --- 1. 高度なフィルター機能（サイドバー） ---
 st.sidebar.markdown("### 🔍 予約フィルター")
 
-# システムが期間を細かく指定できる選択肢を提示いたします
 period_option = st.sidebar.selectbox(
     "検索する期間の単位を指定してください",
     ["1日単位", "1週間単位", "2週間単位", "3週間単位", "月単位", "年単位", "全日程"]
 )
 
-# 全日程以外の場合、システムは基準となる日付をカレンダーから取得いたします
 if period_option != "全日程":
     base_date = st.sidebar.date_input("基準となる日付をカレンダーから選択してください", datetime.today().date())
 else:
     base_date = datetime.today().date()
 
-search_query = st.sidebar.text_input("お客様のお名前で検索（任意）")
-
-# システムが選択された期間のデータを抽出いたします
-from datetime import timedelta
+search_query = st.sidebar.text_input("お客様のお名前（漢字・カナ）で検索（任意）")
 
 target_reservations = []
 for req in st.session_state.admin_db:
     req_date = req["date"]
     
-    # 期間条件の厳密な判定を行います
     is_in_period = False
     if period_option == "全日程":
         is_in_period = True
@@ -79,11 +81,9 @@ for req in st.session_state.admin_db:
     if is_in_period:
         target_reservations.append(req)
 
-# 名前の検索条件があれば、システムはさらに絞り込みを行います
 if search_query:
-    target_reservations = [req for req in target_reservations if search_query in req["name"]]
+    target_reservations = [req for req in target_reservations if search_query in req["name"] or search_query in req["furigana"]]
 
-# 複数日のデータが混ざるため、日付と時間の両方で順番に並べ替えます
 target_reservations.sort(key=lambda x: (x["date"], x["time"]))
 
 # --- 2. 経営指標（KPI）ダッシュボード ---
@@ -95,29 +95,30 @@ col1.metric("指定期間内の総予約数", f"{len(target_reservations)} 件")
 st.markdown("---")
 
 # --- 3. 自動振り分けタブシステム ---
-CATEGORY_TABS = ["すべて", "✂️ ヘア", "💆‍♀️ スパ", "👘 着付け", "💅 ネイル", "🧘 瞑想教室", "🦷 歯医者"]
+CATEGORY_TABS = ["すべて"] + services
 tabs = st.tabs(CATEGORY_TABS)
 
 for i, tab_name in enumerate(CATEGORY_TABS):
     with tabs[i]:
-        # システムが各タブに合わせてデータを自動で振り分けます
         if tab_name == "すべて":
             filtered_res = target_reservations
         else:
             filtered_res = [req for req in target_reservations if req["service"] == tab_name]
         
-        # 4. ノードベース（カード形式）での詳細表示
         if not filtered_res:
             st.info(f"システムからのご案内：このカテゴリ（{tab_name}）には、指定された期間内に予約が入っておりません。")
         else:
             for req in filtered_res:
-                # 複数日の予約を区別できるよう、日付の表示をカードに追加いたしました
+                # 読者の指示通り、日付と時間の間にカテゴリを大きく挿入し、フルネーム・フリガナを表示いたします
                 st.markdown(f"""
                 <div style="border:2px solid #d9b38c; border-radius: 8px; padding: 15px; margin-bottom: 15px; background-color: #fdfaf6; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-                    <h4 style="margin:0; color:#333333;">📅 {req['date']} ⏰ {req['time']} - {req['name']} 様</h4>
+                    <h4 style="margin:0; color:#333333; display:flex; align-items:center; flex-wrap:wrap;">
+                        📅 {req['date']} 
+                        <span style="font-size:1.4em; font-weight:bold; color:#d9b38c; margin: 0 10px;">【{req['service']}】</span> 
+                        ⏰ {req['time']} - {req['name']}（{req['furigana']}）様
+                    </h4>
                     <hr style="margin: 10px 0; border: none; border-top: 1px dashed #d9b38c;">
                     <p style="margin:0; color:#555555; font-size: 16px; line-height: 1.6;">
-                        <b>カテゴリ:</b> {req['service']} <br>
                         <b>指名担当者:</b> {req['staff']} <br>
                         <b>現在の状況:</b> <span style="color:white; background-color:green; padding: 2px 8px; border-radius: 4px; font-size: 14px; font-weight:bold;">{req['status']}</span>
                     </p>
