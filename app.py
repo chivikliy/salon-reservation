@@ -138,7 +138,8 @@ for i, (service_name, service_data) in enumerate(SERVICES.items()):
                     final_data = f"【予約完了】\nお名前: {name} 様\n電話: {phone}\n来店歴: {history}\n\nカテゴリ: {service_name}\nメニュー: {sel_menu}\n担当: {sel_staff}\n日時: {d} {t}\n目安金額: {price_str}{dentist_info}"
                     st.code(final_data)
                     
-                    new_history_line = f"{d} {t} | {name} 様 | {service_name}: {sel_menu} | {price_str}"
+                    # システムが空き時間を担当者ごとに判別するため、担当者名を記録に必ず追加いたします
+                    new_history_line = f"{d} {t} | {name} 様 | 担当: {sel_staff} | {service_name}: {sel_menu} | {price_str}"
                     st.session_state.history_list.append(new_history_line)
 
 # --- 3. 簡易履歴表示 ---
@@ -147,3 +148,32 @@ if st.session_state.history_list:
     st.write("#### 【システムが本日受付した予約一覧】")
     for item in st.session_state.history_list:
         st.code(item)
+
+# --- 🛠 開発者専用メニュー（テスト用自動予約システム） ---
+st.markdown("---")
+with st.expander("🛠 開発者専用メニュー（動作テスト用のダミーデータ自動生成）"):
+    st.write("システムがランダムな予約データを自動で生成し、リストに追加いたします。")
+    if st.button("システムにダミー予約を10件自動で追加する"):
+        import random
+        from datetime import timedelta
+        
+        dummy_names = ["佐藤", "鈴木", "高橋", "田中", "伊藤", "渡辺", "山本", "中村", "小林", "加藤"]
+        staff_list = ["田中", "佐藤", "鈴木", "専属着付師 山田", "高橋", "インストラクター 伊藤", "院長希望"]
+        services = ["✂️ ヘア", "💆‍♀️ スパ", "👘 着付け", "💅 ネイル", "🧘 瞑想教室", "🦷 歯医者"]
+        times = ["10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00", "18:00"]
+        
+        today = datetime.today().date()
+        
+        for _ in range(10):
+            # システムが今日から2日後までのランダムな日付を作成いたします
+            random_date = today + timedelta(days=random.randint(0, 2))
+            random_time = random.choice(times)
+            random_name = random.choice(dummy_names)
+            random_staff = random.choice(staff_list)
+            random_service = random.choice(services)
+            
+            # 担当者名を含めた記録をシステムが生成いたします
+            dummy_record = f"{random_date} {random_time} | {random_name} 様 | 担当: {random_staff} | {random_service} | テスト自動生成"
+            st.session_state.history_list.append(dummy_record)
+            
+        st.success("システムが10件のダミー予約を生成し、リストに追加いたしました。読者はブラウザの更新ボタンを押して、カレンダーの空き時間を確認してください。")
