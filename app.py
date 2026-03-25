@@ -77,7 +77,28 @@ for i, (service_name, service_data) in enumerate(SERVICES.items()):
             sel_staff = st.selectbox("ご希望の担当者", service_data["staffs"])
             
             d = st.date_input("ご希望の予約日", key=f"date_{i}")
-            t = st.time_input("ご希望の予約時間", key=f"time_{i}")
+            
+            # システムが管理する1日の営業時間リスト（10:00〜18:00）
+            ALL_TIME_SLOTS = ["10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00", "18:00"]
+            
+            # お客様が選んだ「日付」と「担当者」の、すでに埋まっている時間をシステムが探し出します
+            booked_times = []
+            if sel_staff != "指名なし" and sel_staff != "希望なし":
+                for record in st.session_state.history_list:
+                    if str(d) in record and sel_staff in record:
+                        for slot in ALL_TIME_SLOTS:
+                            if slot in record:
+                                booked_times.append(slot)
+            
+            # 全ての時間から、すでに埋まっている時間を引き算して「空き時間」を作ります
+            available_times = [slot for slot in ALL_TIME_SLOTS if slot not in booked_times]
+            
+            # 空き時間の有無によって、画面の表示を切り替えます
+            if not available_times:
+                st.error("システムからのご案内：申し訳ございません。この日は担当者の予約がすべて埋まっております。カレンダーから別の日付を選択してください。")
+                t = None
+            else:
+                t = st.selectbox("空いている時間を選択してください（予約済みの時間は自動で非表示になります）", available_times, key=f"time_{i}")
             
             # 歯医者専用の問診票
             dentist_info = ""
