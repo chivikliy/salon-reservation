@@ -145,9 +145,11 @@ for i, (service_name, service_data) in enumerate(SERVICES.items()):
 # --- 3. 簡易履歴表示 ---
 if st.session_state.history_list:
     st.divider()
-    st.write("#### 【システムが本日受付した予約一覧】")
+    st.write("#### 【システムが本日受付した予約一覧】（※テストデータは非表示）")
     for item in st.session_state.history_list:
-        st.code(item)
+        # システムは「テスト自動生成」という文字列が含まれるデータを除外して表示いたします
+        if "テスト自動生成" not in item:
+            st.code(item)
 
 # --- 🛠 開発者専用メニュー（テスト用自動予約システム） ---
 st.markdown("---")
