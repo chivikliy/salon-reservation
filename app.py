@@ -153,7 +153,7 @@ if st.session_state.history_list:
 st.markdown("---")
 with st.expander("🛠 開発者専用メニュー（動作テスト用のダミーデータ自動生成）"):
     st.write("システムがランダムな予約データを自動で生成し、リストに追加いたします。")
-    if st.button("システムにダミー予約を10件自動で追加する"):
+    if st.button("システムにダミー予約を30日分（計300件）自動で追加する"):
         import random
         from datetime import timedelta
         
@@ -163,17 +163,35 @@ with st.expander("🛠 開発者専用メニュー（動作テスト用のダミ
         times = ["10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00", "18:00"]
         
         today = datetime.today().date()
+        added_count = 0
         
-        for _ in range(10):
-            # システムが今日から2日後までのランダムな日付を作成いたします
-            random_date = today + timedelta(days=random.randint(0, 2))
-            random_time = random.choice(times)
-            random_name = random.choice(dummy_names)
-            random_staff = random.choice(staff_list)
-            random_service = random.choice(services)
+        # システムは本日から30日間、1日ずつ順番に処理を進めます
+        for day_offset in range(30):
+            target_date = today + timedelta(days=day_offset)
             
-            # 担当者名を含めた記録をシステムが生成いたします
-            dummy_record = f"{random_date} {random_time} | {random_name} 様 | 担当: {random_staff} | {random_service} | テスト自動生成"
-            st.session_state.history_list.append(dummy_record)
+            # その日の「すでに予約された時間と担当者のペア」と「予約したお客様の名前」を記録する入れ物を用意します
+            used_time_staff = set()
+            used_names = set()
             
-        st.success("システムが10件のダミー予約を生成し、リストに追加いたしました。読者はブラウザの更新ボタンを押して、カレンダーの空き時間を確認してください。")
+            daily_count = 0
+            attempts = 0 # 無限ループを防止するための安全装置です
+            
+            # システムは、重複がない10件の予約を1日ごとに生成いたします
+            while daily_count < 10 and attempts < 100:
+                attempts += 1
+                r_time = random.choice(times)
+                r_staff = random.choice(staff_list)
+                r_name = random.choice(dummy_names)
+                r_service = random.choice(services)
+                
+                # 同時刻・同担当者の重複、および同日の同じお客様の重複をシステムが厳密に弾きます
+                if (r_time, r_staff) not in used_time_staff and r_name not in used_names:
+                    used_time_staff.add((r_time, r_staff))
+                    used_names.add(r_name)
+                    
+                    dummy_record = f"{target_date} {r_time} | {r_name} 様 | 担当: {r_staff} | {r_service} | テスト自動生成"
+                    st.session_state.history_list.append(dummy_record)
+                    daily_count += 1
+                    added_count += 1
+                    
+        st.success(f"システムが30日分、合計{added_count}件の重複しないダミー予約を生成し、リストに追加いたしました。読者はブラウザの更新ボタンを押して、カレンダーの空き時間を確認してください。")
